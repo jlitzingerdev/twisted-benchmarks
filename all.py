@@ -12,6 +12,7 @@ allBenchmarkNames = [
 
     "tcp_connect", "ssh_connect", "ssl_connect", "sslbio_connect",
     "tcp_throughput", "ssh_throughput", "ssl_throughput", "sslbio_throughput",
+    "web_https"
     ]
 
 allBenchmarks = []
