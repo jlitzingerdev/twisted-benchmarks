@@ -12,6 +12,9 @@ from twisted.web.static import Data
 from twisted.web.resource import Resource
 from twisted.internet.ssl import (Certificate, KeyPair, PrivateCertificate,
                                   trustRootFromCertificates)
+from twisted.internet.interfaces import IHostnameResolver, IHostResolution
+from twisted.internet.address import IPv4Address
+from zope.interface import implementer
 
 from benchlib import Client, driver
 
@@ -105,6 +108,34 @@ privCert = PrivateCertificate.fromCertificateAndKeyPair(
 root = Resource()
 root.putChild(b'', Data(b"Hello, world", "text/plain"))
 
+
+
+@implementer(IHostResolution)
+class Localhost(object):
+
+    name = u'localhost'
+
+
+
+@implementer(IHostnameResolver)
+class LocalhostNameResolver(object):
+    """
+    A resolver for bypassing actual hostname lookup.
+    """
+    def resolveHostName(self, resolutionReceiver,
+                        hostName,
+                        portNumber=0,
+                        addressTypes=None,
+                        transportSemantics='TCP'):
+
+        resolutionReceiver.resolutionBegan(Localhost())
+        resolutionReceiver.addressResolved(
+            IPv4Address('TCP', '127.0.0.1', portNumber)
+        )
+        resolutionReceiver.resolutionComplete()
+
+
+
 class TLSClient(Client):
 
     def __init__(self, reactor, port):
@@ -125,6 +156,8 @@ class TLSClient(Client):
 
 def main(reactor, duration):
     concurrency = 10
+    resolver = LocalhostNameResolver()
+    reactor.installNameResolver(resolver)
     port = reactor.listenSSL(
         0,
         Site(root),
